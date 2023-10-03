@@ -1,12 +1,17 @@
 import { PolywrapClient } from "@polywrap/client-js";
 import * as App from "../types/wrap";
 import path from "path";
+import {
+  getClientConfig,
+  initInfra,
+  setupContractNetworks,
+  stopInfra,
+} from "../utils";
 
 jest.setTimeout(60000);
 
 describe("Template Wrapper End to End Tests", () => {
 
-  const client: PolywrapClient = new PolywrapClient();
   let uri: string;
 
   beforeAll(() => {
@@ -16,7 +21,6 @@ describe("Template Wrapper End to End Tests", () => {
   })
 
   it("plays a quiz", async () => {
-
     const {
       wallet,
       other,
@@ -26,21 +30,21 @@ describe("Template Wrapper End to End Tests", () => {
       arcoiris,
       proportional,
       quizMC
-    } = await loadFixture(quizMCFixture);
+    } = await setupContractNetworks(new PolywrapClient(getClientConfig()))
 
-    // TODO: `connect` client to poller's wallet
+    const clientPoller = new PolywrapClient(getClientConfig({ signer: wallet.address }));
+
     const {
       value: { result: gatheringID }
-    } = await client.invoke<App.Gathering>({
+    } = await clientPoller.invoke<App.Gathering>({
       uri,
       method: "createGathering",
       args: { arcoiris, token, proportional, quizMC, isMutable }
     });
 
-    // TODO: `connect` client to poller's wallet
     const {
       value: { result: { quizID, ceremonyID } }
-    } = await client.invoke<App.Gathering>({
+    } = await clientPoller.invoke<App.Gathering>({
       uri,
       method: "createQuiz",
       args: { quizMC, gatheringID }
@@ -70,8 +74,9 @@ describe("Template Wrapper End to End Tests", () => {
 
     await txApproveBob.wait();
 
-    // TODO: `connect` client to Alice's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    const clientAlice = new PolywrapClient(getClientConfig({ signer: alice.address }));
+
+    await clientAlice.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "contribute",
       args: {
@@ -83,8 +88,9 @@ describe("Template Wrapper End to End Tests", () => {
       },
     });
 
-    // TODO: `connect` client to Bob's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    const clientBob = new PolywrapClient(getClientConfig({ signer: bob.address }));
+
+    await clientBob.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "contribute",
       args: {
@@ -115,8 +121,7 @@ describe("Template Wrapper End to End Tests", () => {
       hashValue("knife", saltCorrect)
     ];
 
-    // TODO: `connect` client to poller's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "commitCorrect",
       args: {
@@ -136,8 +141,7 @@ describe("Template Wrapper End to End Tests", () => {
       hashValue("knife", saltAlice)
     ];
 
-    // TODO: `connect` client to Alice's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientAlice.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "commitGuess",
       args: {
@@ -153,8 +157,7 @@ describe("Template Wrapper End to End Tests", () => {
       ethers.toUtf8Bytes("knife")
     ];
 
-    // TODO: `connect` client to poller's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "endQuiz",
       args: {
@@ -163,8 +166,7 @@ describe("Template Wrapper End to End Tests", () => {
       },
     });
 
-    // TODO: `connect` client to poller's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "revealCorrect",
       args: {
@@ -175,8 +177,7 @@ describe("Template Wrapper End to End Tests", () => {
       },
     });
 
-    // TODO: `connect` client to Alice's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientAlice.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "revealGuess",
       args: {
@@ -187,8 +188,7 @@ describe("Template Wrapper End to End Tests", () => {
       },
     });
 
-    // TODO: `connect` client to poller's wallet
-    await client.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethereum_TxResponse>({
       uri,
       method: "redistribute",
       args: {
