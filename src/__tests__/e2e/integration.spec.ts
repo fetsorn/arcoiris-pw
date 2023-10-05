@@ -1,5 +1,5 @@
 import { PolywrapClient } from "@polywrap/client-js";
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 import * as App from "../types/wrap";
 import path from "path";
 import {
@@ -12,7 +12,6 @@ import {
 jest.setTimeout(60000);
 
 describe("Template Wrapper End to End Tests", () => {
-
   let uri: string;
 
   beforeAll(async () => {
@@ -23,39 +22,36 @@ describe("Template Wrapper End to End Tests", () => {
     const wrapperPath: string = path.join(dirname, "..", "..", "..");
 
     uri = `fs/${wrapperPath}/build`;
-  })
+  });
 
   afterAll(async () => {
     await stopInfra();
-  })
+  });
 
   it("plays a quiz", async () => {
-    const {
-      poller,
-      alice,
-      bob,
-      token,
-      arcoiris,
-      proportional,
-      quizMC
-    } = await setupContractNetworks(new PolywrapClient(getClientConfig()))
+    const { poller, alice, bob, token, arcoiris, proportional, quizMC } =
+      await setupContractNetworks(new PolywrapClient(getClientConfig()));
 
-    const clientPoller = new PolywrapClient(getClientConfig({ signer: poller }));
+    const clientPoller = new PolywrapClient(
+      getClientConfig({ signer: poller }),
+    );
 
     const {
-      value: { result: gatheringID }
+      value: { result: gatheringID },
     } = await clientPoller.invoke<App.Gathering>({
       uri,
       method: "createGathering",
-      args: { arcoiris, token, proportional, quizMC, isMutable: false }
+      args: { arcoiris, token, proportional, quizMC, isMutable: false },
     });
 
     const {
-      value: { result: { quizID, ceremonyID } }
+      value: {
+        result: { quizID, ceremonyID },
+      },
     } = await clientPoller.invoke<App.Gathering>({
       uri,
       method: "createQuiz",
-      args: { quizMC, gatheringID }
+      args: { quizMC, gatheringID },
     });
 
     const txMintAlice = await token.mint(alice.address);
@@ -126,7 +122,7 @@ describe("Template Wrapper End to End Tests", () => {
 
     const hashesCorrect = [
       hashValue("banana", saltCorrect),
-      hashValue("knife", saltCorrect)
+      hashValue("knife", saltCorrect),
     ];
 
     await clientPoller.invoke<App.Ethereum_TxResponse>({
@@ -146,7 +142,7 @@ describe("Template Wrapper End to End Tests", () => {
 
     const hashesAlice = [
       hashValue("banana", saltAlice),
-      hashValue("knife", saltAlice)
+      hashValue("knife", saltAlice),
     ];
 
     await clientAlice.invoke<App.Ethereum_TxResponse>({
@@ -162,7 +158,7 @@ describe("Template Wrapper End to End Tests", () => {
 
     const guessesCorrect = [
       ethers.toUtf8Bytes("banana"),
-      ethers.toUtf8Bytes("knife")
+      ethers.toUtf8Bytes("knife"),
     ];
 
     await clientPoller.invoke<App.Ethereum_TxResponse>({

@@ -5,7 +5,7 @@ import {
 } from "@polywrap/ethereum-provider-js";
 import { ethers, Wallet } from "ethers";
 import { ETH_ENS_IPFS_MODULE_CONSTANTS } from "@polywrap/cli-js";
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess } from "child_process";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -36,7 +36,7 @@ import {
   IERC721,
   Arcoiris,
   IRedistribution,
-  QuizMC
+  QuizMC,
 } from "arcoiris/typechain-types";
 
 import { pkPoller, pkAlice, pkBob } from "./constants";
@@ -48,7 +48,7 @@ interface CustomizableConfig {
 export const chainId = 1337;
 
 export function getClientConfig(
-  customConfig?: CustomizableConfig
+  customConfig?: CustomizableConfig,
 ): CoreClientConfig {
   const envs: Record<string, Record<string, unknown>> = {
     "wrap://package/ipfs-resolver": {
@@ -72,7 +72,7 @@ export function getClientConfig(
           },
           defaultNetwork: "testnet",
         }),
-      }) as IWrapPackage
+      }) as IWrapPackage,
     );
   }
 
@@ -81,104 +81,99 @@ export function getClientConfig(
 
 export const setupContractNetworks = async (
   client: PolywrapClient,
-): Promise<
-    {
-        poller: Wallet,
-        alice: Wallet,
-        bob: Wallet,
-        token: IERC721,
-        arcoiris: Arcoiris,
-        proportional: IRedistribution,
-        quizMC: QuizMC
-    }
-> => {
-    const provider = new ethers.JsonRpcProvider(
-        ETH_ENS_IPFS_MODULE_CONSTANTS.ethereumProvider
-    );
-
-    const poller = new Wallet(
-        pkPoller,
-        provider
-    );
-
-    const alice = new Wallet(
-        pkAlice,
-        provider
-    );
-
-    const bob = new Wallet(
-        pkBob,
-        provider
-    );
-
-  await provider.send(
-    "hardhat_setBalance",
-    [poller.address, ethers.toQuantity(100n ** 18n)],
-  );
-  await provider.send(
-    "hardhat_setBalance",
-    [alice.address, ethers.toQuantity(100n ** 18n)],
-  );
-  await provider.send(
-    "hardhat_setBalance",
-    [bob.address, ethers.toQuantity(100n ** 18n)],
+): Promise<{
+  poller: Wallet;
+  alice: Wallet;
+  bob: Wallet;
+  token: IERC721;
+  arcoiris: Arcoiris;
+  proportional: IRedistribution;
+  quizMC: QuizMC;
+}> => {
+  const provider = new ethers.JsonRpcProvider(
+    ETH_ENS_IPFS_MODULE_CONSTANTS.ethereumProvider,
   );
 
-    const tokenFactory = new ethers.ContractFactory(ERC721ABI, ERC721Bytecode, poller);
+  const poller = new Wallet(pkPoller, provider);
 
-    const token = (await tokenFactory.deploy(
-        "Ticket",
-        "TICKT",
-        "https://example.com"
-    )) as IERC721;
+  const alice = new Wallet(pkAlice, provider);
 
-    await token.waitForDeployment();
+  const bob = new Wallet(pkBob, provider);
 
-    const arcoirisFactory = new ethers.ContractFactory(
-        ArcoirisABI,
-        ArcoirisBytecode,
-        poller
-    );
+  await provider.send("hardhat_setBalance", [
+    poller.address,
+    ethers.toQuantity(100n ** 18n),
+  ]);
+  await provider.send("hardhat_setBalance", [
+    alice.address,
+    ethers.toQuantity(100n ** 18n),
+  ]);
+  await provider.send("hardhat_setBalance", [
+    bob.address,
+    ethers.toQuantity(100n ** 18n),
+  ]);
 
-    const arcoiris = (await arcoirisFactory.deploy()) as Arcoiris;
+  const tokenFactory = new ethers.ContractFactory(
+    ERC721ABI,
+    ERC721Bytecode,
+    poller,
+  );
 
-    await arcoiris.waitForDeployment();
+  const token = (await tokenFactory.deploy(
+    "Ticket",
+    "TICKT",
+    "https://example.com",
+  )) as IERC721;
 
-    const proportionalFactory = new ethers.ContractFactory(
-        ProportionalABI,
-        ProportionalBytecode,
-        poller
-    );
+  await token.waitForDeployment();
 
-    const proportional = (await proportionalFactory.deploy()) as IRedistribution;
+  const arcoirisFactory = new ethers.ContractFactory(
+    ArcoirisABI,
+    ArcoirisBytecode,
+    poller,
+  );
 
-    await proportional.waitForDeployment();
+  const arcoiris = (await arcoirisFactory.deploy()) as Arcoiris;
 
-    const quizMCFactory = new ethers.ContractFactory(
-        QuizMCABI,
-        QuizMCBytecode,
-        poller
-    );
+  await arcoiris.waitForDeployment();
 
-    const quizMC = (await quizMCFactory.deploy(arcoiris.target)) as IRedistribution;
+  const proportionalFactory = new ethers.ContractFactory(
+    ProportionalABI,
+    ProportionalBytecode,
+    poller,
+  );
 
-    await quizMC.waitForDeployment();
+  const proportional = (await proportionalFactory.deploy()) as IRedistribution;
 
-    return {
-        poller,
-        alice,
-        bob,
-        token,
-        arcoiris,
-        proportional,
-        quizMC
-    };
+  await proportional.waitForDeployment();
+
+  const quizMCFactory = new ethers.ContractFactory(
+    QuizMCABI,
+    QuizMCBytecode,
+    poller,
+  );
+
+  const quizMC = (await quizMCFactory.deploy(
+    arcoiris.target,
+  )) as IRedistribution;
+
+  await quizMC.waitForDeployment();
+
+  return {
+    poller,
+    alice,
+    bob,
+    token,
+    arcoiris,
+    proportional,
+    quizMC,
+  };
 };
 
 var hardhatNode: ChildProcess;
 
 export async function initInfra(): Promise<void> {
-  hardhatNode = spawn('npx', ['hardhat', 'node']);
+  hardhatNode = spawn("npx", ["hardhat", "node"]);
 
   await new Promise<void>(function (resolve) {
     setTimeout(() => resolve(), 5000);
@@ -188,7 +183,7 @@ export async function initInfra(): Promise<void> {
 }
 
 export async function stopInfra(): Promise<void> {
-  hardhatNode.kill()
+  hardhatNode.kill();
 
   return Promise.resolve();
 }
