@@ -36,18 +36,17 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       getClientConfig({ signer: poller }),
     );
 
-    const { value: gatheringID } =
-      await clientPoller.invoke<App.Arcoiris_Gathering>({
-        uri,
-        method: "createGathering",
-        args: {
-          arcoiris: arcoiris.target,
-          token: token.target,
-          redistribution: proportional.target,
-          quizMC: quizMC.target,
-          isMutable: false,
-        },
-      });
+    const { value: gatheringID } = await clientPoller.invoke<App.BigInt>({
+      uri,
+      method: "createGathering",
+      args: {
+        arcoiris: arcoiris.target,
+        collection: token.target,
+        redistribution: proportional.target,
+        mc: quizMC.target,
+        isMutable: false,
+      },
+    });
 
     const {
       value: { quizID, ceremonyID },

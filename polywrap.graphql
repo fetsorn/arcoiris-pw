@@ -1,4 +1,4 @@
-#import { Module, TxResponse, TxReceipt } into Ethers from "wrapscan.io/polywrap/ethers@1.0"
+#import { Module, TxResponse, TxReceipt } into Ethers from "wrap://fs/./ethers"
 
 type Module {
     """Create a gathering struct with common settings for redistribution ceremonies"""
@@ -6,11 +6,11 @@ type Module {
         """Address of the Arcoíris contract"""
         arcoiris: String!
         """Address of ERC721 token"""
-        token: String!
+        collection: String!
         """Address of the redistribution algorithm"""
         redistribution: String!
         """Address of the quiz master of ceremonies contract"""
-        quizMC: String!
+        mc: String!
         """True if gathering settings can be changed"""
         isMutable: Boolean!
     ): BigInt!
