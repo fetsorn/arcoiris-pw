@@ -5,9 +5,7 @@
   "version": "0.12.1",
   "scripts": {
     "codegen": "npx polywrap codegen",
-    "build": "npx polywrap build",
-    "test:env:up": "npx polywrap infra up --modules=eth-ens-ipfs",
-    "test:env:down": "npx polywrap infra down --modules=eth-ens-ipfs",
+    "build": "npx polywrap build -s local",
     "deploy": "npx polywrap deploy",
     "test": "yarn test:e2e && yarn test:workflow",
     "test:e2e": "yarn test:e2e:codegen && jest --passWithNoTests --runInBand --verbose",
@@ -15,7 +13,6 @@
     "test:workflow": "npx polywrap test -o ./workflows/output.json"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@polywrap/cli-js": "^0.12.1",
     "@polywrap/ethereum-provider-js": "^0.3.1",
     "@types/jest": "26.0.8",
@@ -29,7 +26,7 @@
     "typescript": "4.9.5"
   },
   "dependencies": {
-    "@polywrap/wasm-as": "0.12.1",
+    "@polywrap/wasm-as": "^0.12.1",
     "assemblyscript": "0.19.23"
   }
 }

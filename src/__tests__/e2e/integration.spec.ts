@@ -11,7 +11,7 @@ import {
 
 jest.setTimeout(60000);
 
-describe("Template Wrapper End to End Tests", () => {
+describe("Arcoíris Wrapper End to End Tests", () => {
   let uri: string;
 
   beforeAll(async () => {
@@ -36,22 +36,25 @@ describe("Template Wrapper End to End Tests", () => {
       getClientConfig({ signer: poller }),
     );
 
-    const {
-      value: { result: gatheringID },
-    } = await clientPoller.invoke<App.Gathering>({
-      uri,
-      method: "createGathering",
-      args: { arcoiris, token, proportional, quizMC, isMutable: false },
-    });
+    const { value: gatheringID } =
+      await clientPoller.invoke<App.Arcoiris_Gathering>({
+        uri,
+        method: "createGathering",
+        args: {
+          arcoiris: arcoiris.target,
+          token: token.target,
+          redistribution: proportional.target,
+          quizMC: quizMC.target,
+          isMutable: false,
+        },
+      });
 
     const {
-      value: {
-        result: { quizID, ceremonyID },
-      },
-    } = await clientPoller.invoke<App.Gathering>({
+      value: { quizID, ceremonyID },
+    } = await clientPoller.invoke<App.Arcoiris_Quiz>({
       uri,
       method: "createQuiz",
-      args: { quizMC, gatheringID },
+      args: { quizMC: quizMC.target, gatheringID },
     });
 
     const txMintAlice = await token.mint(alice.address);
@@ -80,33 +83,33 @@ describe("Template Wrapper End to End Tests", () => {
 
     const clientAlice = new PolywrapClient(getClientConfig({ signer: alice }));
 
-    await clientAlice.invoke<App.Ethereum_TxResponse>({
+    await clientAlice.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "contribute",
       args: {
-        arcoiris,
+        arcoiris: arcoiris.target,
         gatheringID,
         ceremonyID,
         token: token.target,
-        tokenAlice,
+        tokenID: tokenAlice,
       },
     });
 
     const clientBob = new PolywrapClient(getClientConfig({ signer: bob }));
 
-    await clientBob.invoke<App.Ethereum_TxResponse>({
+    await clientBob.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "contribute",
       args: {
-        arcoiris,
+        arcoiris: arcoiris.target,
         gatheringID,
         ceremonyID,
         token: token.target,
-        tokenBob,
+        tokenID: tokenBob,
       },
     });
 
-    function hashValue(value, salt) {
+    function hashValue(value: string, salt: string) {
       const bytes = ethers.toUtf8Bytes(value);
 
       const guess = ethers.concat([bytes, salt]);
@@ -125,14 +128,14 @@ describe("Template Wrapper End to End Tests", () => {
       hashValue("knife", saltCorrect),
     ];
 
-    await clientPoller.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "commitCorrect",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
-        saltHashCorrect,
-        hashesCorrect,
+        saltHash: saltHashCorrect,
+        hashes: hashesCorrect,
       },
     });
 
@@ -145,14 +148,14 @@ describe("Template Wrapper End to End Tests", () => {
       hashValue("knife", saltAlice),
     ];
 
-    await clientAlice.invoke<App.Ethereum_TxResponse>({
+    await clientAlice.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "commitGuess",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
-        saltHashAlice,
-        hashesAlice,
+        saltHash: saltHashAlice,
+        hashes: hashesAlice,
       },
     });
 
@@ -161,48 +164,48 @@ describe("Template Wrapper End to End Tests", () => {
       ethers.toUtf8Bytes("knife"),
     ];
 
-    await clientPoller.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "endQuiz",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
       },
     });
 
-    await clientPoller.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "revealCorrect",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
         saltCorrect,
         guessesCorrect,
       },
     });
 
-    await clientAlice.invoke<App.Ethereum_TxResponse>({
+    await clientAlice.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "revealGuess",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
         saltAlice,
         guessesCorrect,
       },
     });
 
-    await clientPoller.invoke<App.Ethereum_TxResponse>({
+    await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "redistribute",
       args: {
-        quizMC,
+        quizMC: quizMC.target,
         quizID,
       },
     });
 
     const balanceAlice = await token.balanceOf(alice.address);
 
-    expect(balanceAlice).to.equal(2);
+    expect(balanceAlice).toEqual(2n);
   });
 });

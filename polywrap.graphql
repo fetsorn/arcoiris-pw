@@ -1,7 +1,111 @@
+#import { Module, TxResponse, TxReceipt } into Ethers from "wrapscan.io/polywrap/ethers@1.0"
+
 type Module {
-    sampleMethod(arg: String!): SampleResult!
+    """Create a gathering struct with common settings for redistribution ceremonies"""
+    createGathering(
+        """Address of the Arcoíris contract"""
+        arcoiris: String!
+        """Address of ERC721 token"""
+        token: String!
+        """Address of the redistribution algorithm"""
+        redistribution: String!
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """True if gathering settings can be changed"""
+        isMutable: Boolean!
+    ): BigInt!
+
+    """Create a quiz struct connected to an Arcoíris gathering"""
+    createQuiz(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the gathering"""
+        gatheringID: BigInt!
+    ): Quiz!
+
+    """Send an ERC721 token to participate in a redistribution ceremony"""
+    contribute(
+        """Address of the Arcoíris contract"""
+        arcoiris: String!
+        """Identification number of the gathering"""
+        gatheringID: BigInt!
+        """Identification number of the ceremony"""
+        ceremonyID: BigInt!
+        """Address of ERC721 token"""
+        token: String!
+        """ERC721 token ID"""
+        tokenID: BigInt!
+    ): Ethers_TxReceipt!
+
+    """Commit hashes of guesses and hashing salt"""
+    commitCorrect(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Hash of the salt used for hashing quiz guesses"""
+        saltHash: String!
+        """Hashes of quiz guesses"""
+        hashes: [String!]!
+    ): Ethers_TxReceipt!
+
+    """Commit hashes of guesses and hashing salt"""
+    commitGuess(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Hash of the salt used for hashing quiz guesses"""
+        saltHash: String!
+        """Hashes of quiz guesses"""
+        hashes: [String!]!
+    ): Ethers_TxReceipt!
+
+    """Finish accepting guesses for a quiz"""
+    endQuiz(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+    ): Ethers_TxReceipt!
+
+    """Reveal guesses and hashing salt"""
+    revealCorrect(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Salt used for hashing quiz guesses"""
+        salt: String!
+        """Quiz guesses"""
+        guesses: [String!]!
+    ): Ethers_TxReceipt!
+
+    """Reveal guesses and hashing salt"""
+    revealGuess(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Salt used for hashing quiz guesses"""
+        salt: String!
+        """Quiz guesses"""
+        guesses: [String!]!
+    ): Ethers_TxReceipt!
+
+    """Redistribute ERC721 contributions based on quiz results"""
+    redistribute(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+    ): Ethers_TxReceipt!
 }
 
-type SampleResult {
-    result: String!
+"""Identification numbers of a quiz and related Arcoíris ceremony"""
+type Quiz {
+    """Identification number of the ceremony"""
+    ceremonyID: BigInt!
+    """Identification number of the quiz"""
+    quizID: BigInt!
 }

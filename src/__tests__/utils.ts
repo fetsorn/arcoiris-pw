@@ -6,7 +6,6 @@ import {
 import { ethers, Wallet } from "ethers";
 import { ETH_ENS_IPFS_MODULE_CONSTANTS } from "@polywrap/cli-js";
 import { spawn, ChildProcess } from "child_process";
-import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
   CoreClientConfig,
