@@ -1,21 +1,19 @@
-import path from "path";
 import {
   Connection,
   Connections,
   ethereumProviderPlugin,
 } from "@polywrap/ethereum-provider-js";
-import { ethers, Signer, Wallet } from "ethers";
-import EthersAdapter from "@safe-global/safe-ethers-lib";
+import { ethers, Wallet } from "ethers";
 import { ETH_ENS_IPFS_MODULE_CONSTANTS } from "@polywrap/cli-js";
+import { spawn, ChildProcess } from 'child_process';
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 
-import * as App from "./types/wrap";
 import {
   CoreClientConfig,
   PolywrapClient,
   IWrapPackage,
 } from "@polywrap/client-js";
 import { PolywrapClientConfigBuilder } from "@polywrap/client-config-builder-js";
-import { runCli } from "@polywrap/cli-js";
 import { configure } from "../../client-config";
 
 import {
@@ -35,40 +33,28 @@ import {
   bytecode as QuizMCBytecode,
 } from "arcoiris/artifacts/QuizMC.sol/QuizMC.json";
 import {
-  ERC721PresetMinterPauserAutoId,
+  IERC721,
   Arcoiris,
   IRedistribution,
   QuizMC
 } from "arcoiris/typechain-types";
 
+import { pkPoller, pkAlice, pkBob } from "./constants";
+
 interface CustomizableConfig {
   signer?: Wallet;
   safeAddress?: string;
 }
-const connection = { networkNameOrChainId: "testnet", node: null };
 export const chainId = 1337;
 
 export function getClientConfig(
   customConfig?: CustomizableConfig
 ): CoreClientConfig {
-  const wrapperPath: string = path.join(
-    path.resolve(__dirname),
-    "..",
-    ".."
-  );
-  const wrapperUri = `fs/${wrapperPath}/build`;
   const envs: Record<string, Record<string, unknown>> = {
     "wrap://package/ipfs-resolver": {
       provider: ETH_ENS_IPFS_MODULE_CONSTANTS.ipfsProvider,
     },
   };
-
-  if (customConfig && customConfig.safeAddress) {
-    envs[wrapperUri] = {
-      safeAddress: customConfig.safeAddress,
-      connection,
-    };
-  }
 
   const config = configure(new PolywrapClientConfigBuilder());
   config.addEnvs(envs);
@@ -81,7 +67,7 @@ export function getClientConfig(
           networks: {
             testnet: new Connection({
               provider: ETH_ENS_IPFS_MODULE_CONSTANTS.ethereumProvider,
-              signer: customConfig?.signer,
+              signer: customConfig?.signer.address,
             }),
           },
           defaultNetwork: "testnet",
@@ -93,13 +79,6 @@ export function getClientConfig(
   return config.build();
 }
 
-const defaults = {
-  owners: [
-    "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
-    "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
-  ],
-  threshold: 1,
-};
 export const setupContractNetworks = async (
   client: PolywrapClient,
 ): Promise<
@@ -107,30 +86,43 @@ export const setupContractNetworks = async (
         poller: Wallet,
         alice: Wallet,
         bob: Wallet,
-        token: ERC721PresetMinterPauserAutoId,
+        token: IERC721,
         arcoiris: Arcoiris,
         proportional: IRedistribution,
         quizMC: QuizMC
     }
 > => {
-    const provider = new ethers.providers.JsonRpcProvider(
+    const provider = new ethers.JsonRpcProvider(
         ETH_ENS_IPFS_MODULE_CONSTANTS.ethereumProvider
     );
 
     const poller = new Wallet(
-        "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
+        pkPoller,
         provider
     );
 
     const alice = new Wallet(
-        "0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1",
+        pkAlice,
         provider
     );
 
     const bob = new Wallet(
-        "0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c",
+        pkBob,
         provider
     );
+
+  await provider.send(
+    "hardhat_setBalance",
+    [poller.address, ethers.toQuantity(100n ** 18n)],
+  );
+  await provider.send(
+    "hardhat_setBalance",
+    [alice.address, ethers.toQuantity(100n ** 18n)],
+  );
+  await provider.send(
+    "hardhat_setBalance",
+    [bob.address, ethers.toQuantity(100n ** 18n)],
+  );
 
     const tokenFactory = new ethers.ContractFactory(ERC721ABI, ERC721Bytecode, poller);
 
@@ -138,9 +130,9 @@ export const setupContractNetworks = async (
         "Ticket",
         "TICKT",
         "https://example.com"
-    )) as ERC721PresetMinterPauserAutoId;
+    )) as IERC721;
 
-    await token.deployed();
+    await token.waitForDeployment();
 
     const arcoirisFactory = new ethers.ContractFactory(
         ArcoirisABI,
@@ -150,7 +142,7 @@ export const setupContractNetworks = async (
 
     const arcoiris = (await arcoirisFactory.deploy()) as Arcoiris;
 
-    await arcoiris.deployed();
+    await arcoiris.waitForDeployment();
 
     const proportionalFactory = new ethers.ContractFactory(
         ProportionalABI,
@@ -160,7 +152,7 @@ export const setupContractNetworks = async (
 
     const proportional = (await proportionalFactory.deploy()) as IRedistribution;
 
-    await proportional.deployed();
+    await proportional.waitForDeployment();
 
     const quizMCFactory = new ethers.ContractFactory(
         QuizMCABI,
@@ -170,7 +162,7 @@ export const setupContractNetworks = async (
 
     const quizMC = (await quizMCFactory.deploy(arcoiris.target)) as IRedistribution;
 
-    await quizMC.deployed();
+    await quizMC.waitForDeployment();
 
     return {
         poller,
@@ -183,16 +175,10 @@ export const setupContractNetworks = async (
     };
 };
 
-export async function initInfra(): Promise<void> {
-  const { exitCode, stderr, stdout } = await runCli({
-    args: ["infra", "up", "--verbose", "--modules", "eth-ens-ipfs"],
-  });
+var hardhatNode: ChildProcess;
 
-  if (exitCode) {
-    throw Error(
-      `initInfra failed to start test environment.\nExit Code: ${exitCode}\nStdErr: ${stderr}\nStdOut: ${stdout}`
-    );
-  }
+export async function initInfra(): Promise<void> {
+  hardhatNode = spawn('npx', ['hardhat', 'node']);
 
   await new Promise<void>(function (resolve) {
     setTimeout(() => resolve(), 5000);
@@ -202,14 +188,7 @@ export async function initInfra(): Promise<void> {
 }
 
 export async function stopInfra(): Promise<void> {
-  const { exitCode, stderr, stdout } = await runCli({
-    args: ["infra", "down", "--verbose", "--modules", "eth-ens-ipfs"],
-  });
+  hardhatNode.kill()
 
-  if (exitCode) {
-    throw Error(
-      `initInfra failed to stop test environment.\nExit Code: ${exitCode}\nStdErr: ${stderr}\nStdOut: ${stdout}`
-    );
-  }
   return Promise.resolve();
 }

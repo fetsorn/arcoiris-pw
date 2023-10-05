@@ -1,4 +1,5 @@
 import { PolywrapClient } from "@polywrap/client-js";
+import { ethers } from 'ethers';
 import * as App from "../types/wrap";
 import path from "path";
 import {
@@ -14,16 +15,23 @@ describe("Template Wrapper End to End Tests", () => {
 
   let uri: string;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    await initInfra();
+
     const dirname: string = path.resolve(__dirname);
+
     const wrapperPath: string = path.join(dirname, "..", "..", "..");
+
     uri = `fs/${wrapperPath}/build`;
+  })
+
+  afterAll(async () => {
+    await stopInfra();
   })
 
   it("plays a quiz", async () => {
     const {
-      wallet,
-      other,
+      poller,
       alice,
       bob,
       token,
@@ -32,14 +40,14 @@ describe("Template Wrapper End to End Tests", () => {
       quizMC
     } = await setupContractNetworks(new PolywrapClient(getClientConfig()))
 
-    const clientPoller = new PolywrapClient(getClientConfig({ signer: wallet.address }));
+    const clientPoller = new PolywrapClient(getClientConfig({ signer: poller }));
 
     const {
       value: { result: gatheringID }
     } = await clientPoller.invoke<App.Gathering>({
       uri,
       method: "createGathering",
-      args: { arcoiris, token, proportional, quizMC, isMutable }
+      args: { arcoiris, token, proportional, quizMC, isMutable: false }
     });
 
     const {
@@ -74,7 +82,7 @@ describe("Template Wrapper End to End Tests", () => {
 
     await txApproveBob.wait();
 
-    const clientAlice = new PolywrapClient(getClientConfig({ signer: alice.address }));
+    const clientAlice = new PolywrapClient(getClientConfig({ signer: alice }));
 
     await clientAlice.invoke<App.Ethereum_TxResponse>({
       uri,
@@ -83,12 +91,12 @@ describe("Template Wrapper End to End Tests", () => {
         arcoiris,
         gatheringID,
         ceremonyID,
-        token.target,
+        token: token.target,
         tokenAlice,
       },
     });
 
-    const clientBob = new PolywrapClient(getClientConfig({ signer: bob.address }));
+    const clientBob = new PolywrapClient(getClientConfig({ signer: bob }));
 
     await clientBob.invoke<App.Ethereum_TxResponse>({
       uri,
@@ -97,7 +105,7 @@ describe("Template Wrapper End to End Tests", () => {
         arcoiris,
         gatheringID,
         ceremonyID,
-        token.target,
+        token: token.target,
         tokenBob,
       },
     });
