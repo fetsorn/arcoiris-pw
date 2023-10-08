@@ -13,8 +13,36 @@ import {
   Ethers_TxReceipt,
   Ethers_Log,
   Ethers_Module,
+  EthersUtils_Module,
 } from "./wrap";
 import { BigInt } from "@polywrap/wasm-as";
+import { encode } from "as-hex";
+
+function hashValues(values: string[], saltID: string): string[] {
+  var hashes = new Array<string>(0);
+
+  for (let i = 0, l = values.length; i < l; ++i) {
+    const salted = "0x" + encode(values[i]) + saltID.substring(2);
+
+    const hash = EthersUtils_Module.keccak256({
+      value: salted,
+    }).unwrap();
+
+    hashes.push(hash);
+  }
+
+  return hashes;
+}
+
+function encodeValues(values: string[]): string[] {
+  var bytes = new Array<string>(0);
+
+  for (let i = 0, l = values.length; i < l; ++i) {
+    bytes.push("0x" + encode(values[i]));
+  }
+
+  return bytes;
+}
 
 export class Module extends ModuleBase {
   createGathering(args: Args_createGathering): BigInt {
@@ -99,20 +127,40 @@ export class Module extends ModuleBase {
   }
 
   commitCorrect(args: Args_commitCorrect): Ethers_TxReceipt {
+    const saltID = EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.salt),
+    }).unwrap();
+
+    const saltHash = EthersUtils_Module.keccak256({
+      value: saltID,
+    }).unwrap();
+
+    const hashes = hashValues(args.guesses, saltID);
+
     return Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
         "function commitCorrect(uint256 quizID, bytes32 saltHash, bytes32[] memory hashes) external onlyModerator(quizID)",
-      args: [args.quizID.toString(), args.saltHash, args.hashes.toString()],
+      args: [args.quizID.toString(), saltHash, "[" + hashes.toString() + "]"],
     }).unwrap();
   }
 
   commitGuess(args: Args_commitGuess): Ethers_TxReceipt {
+    const saltID = EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.salt),
+    }).unwrap();
+
+    const saltHash = EthersUtils_Module.keccak256({
+      value: saltID,
+    }).unwrap();
+
+    const hashes = hashValues(args.guesses, saltID);
+
     return Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
         "function commitGuess(uint256 quizID, bytes32 saltHash, bytes32[] memory hashes) external",
-      args: [args.quizID.toString(), args.saltHash, args.hashes.toString()],
+      args: [args.quizID.toString(), saltHash, "[" + hashes.toString() + "]"],
     }).unwrap();
   }
 
@@ -125,20 +173,36 @@ export class Module extends ModuleBase {
   }
 
   revealCorrect(args: Args_revealCorrect): Ethers_TxReceipt {
+    const saltID = EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.salt),
+    }).unwrap();
+
+    const hashes = hashValues(args.guesses, saltID);
+
+    const guesses = encodeValues(args.guesses);
+
     return Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
         "function revealCorrect(uint256 quizID, bytes32 salt, bytes[] memory guesses) external onlyModerator(quizID)",
-      args: [args.quizID.toString(), args.salt, args.guesses.toString()],
+      args: [args.quizID.toString(), saltID, "[" + guesses.toString() + "]"],
     }).unwrap();
   }
 
   revealGuess(args: Args_revealGuess): Ethers_TxReceipt {
+    const saltID = EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.salt),
+    }).unwrap();
+
+    const hashes = hashValues(args.guesses, saltID);
+
+    const guesses = encodeValues(args.guesses);
+
     return Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
-        "function revealGuess(uint256 quizID, bytes32 salt, bytes[] memory guesses) external",
-      args: [args.quizID.toString(), args.salt, args.guesses.toString()],
+        "function revealGuess(uint256 quizID, bytes32 salt, bytes[] memory guesses) external onlyModerator(quizID)",
+      args: [args.quizID.toString(), saltID, "[" + guesses.toString() + "]"],
     }).unwrap();
   }
 

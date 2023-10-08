@@ -1,4 +1,5 @@
-#import { Module, TxResponse, TxReceipt } into Ethers from "wrap://fs/./ethers"
+#import { Module, TxResponse, TxReceipt } into Ethers from "wrap://fs/./wrap_modules/ethers"
+#import { Module } into EthersUtils from "wrap://fs/./wrap_modules/ethers_utils"
 
 type Module {
     """Create a gathering struct with common settings for redistribution ceremonies"""
@@ -43,10 +44,10 @@ type Module {
         quizMC: String!
         """Identification number of the quiz"""
         quizID: BigInt!
-        """Hash of the salt used for hashing quiz guesses"""
-        saltHash: String!
-        """Hashes of quiz guesses"""
-        hashes: [String!]!
+        """Salt used for hashing quiz guesses"""
+        salt: String!
+        """Quiz guesses"""
+        guesses: [String!]!
     ): Ethers_TxReceipt!
 
     """Commit hashes of guesses and hashing salt"""
@@ -55,10 +56,10 @@ type Module {
         quizMC: String!
         """Identification number of the quiz"""
         quizID: BigInt!
-        """Hash of the salt used for hashing quiz guesses"""
-        saltHash: String!
-        """Hashes of quiz guesses"""
-        hashes: [String!]!
+        """Salt used for hashing quiz guesses"""
+        salt: String!
+        """Quiz guesses"""
+        guesses: [String!]!
     ): Ethers_TxReceipt!
 
     """Finish accepting guesses for a quiz"""

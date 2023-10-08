@@ -1,2 +1,3 @@
-#import * into Ethers from "wrap://fs/./ethers"
+#import * into Ethers from "wrap://fs/./wrap_modules/ethers"
+#import { Module } into EthersUtils from "wrap://fs/./wrap_modules/ethers_utils"
 #import * into Arcoiris from "wrap://fs/./build"

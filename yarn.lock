@@ -2235,6 +2235,11 @@ as-container@0.6.1:
   resolved "https://registry.yarnpkg.com/as-container/-/as-container-0.6.1.tgz#94806a91e96b68622c55f301fc04e6339a1228c2"
   integrity sha512-cgQ7P/dQAGeU2lLhPpinThYfFcUw3HzV8b00CoqV+l5Tsgpl7xhXdoc/2srCyK0um1BVAQwlrEpNTtthzkMF+g==
 
+as-hex@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/as-hex/-/as-hex-1.0.1.tgz#11b9170b6dfae514f08959cfa9ba3ee5b2db1214"
+  integrity sha512-bafVzM51AYyLzS2uQ2rsWfnWJARqGVxuiuLF7r3tIvi1UxHXy0FfHLtzo7o4F3Kk+uJhK9mLVaFmuFIa9C84GQ==
+
 assemblyscript@0.19.23:
   version "0.19.23"
   resolved "https://registry.yarnpkg.com/assemblyscript/-/assemblyscript-0.19.23.tgz#16ece69f7f302161e2e736a0f6a474e6db72134c"

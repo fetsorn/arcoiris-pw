@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@polywrap/wasm-as": "^0.12.1",
+    "as-hex": "^1.0.1",
     "assemblyscript": "0.19.23"
   }
 }

@@ -9,10 +9,12 @@ import {
   stopInfra,
 } from "../utils";
 
-jest.setTimeout(60000);
+jest.setTimeout(600000);
 
 describe("Arcoíris Wrapper End to End Tests", () => {
   let uri: string;
+
+  let tx: any;
 
   beforeAll(async () => {
     await initInfra();
@@ -30,7 +32,7 @@ describe("Arcoíris Wrapper End to End Tests", () => {
 
   it("plays a quiz", async () => {
     const { poller, alice, bob, token, arcoiris, proportional, quizMC } =
-      await setupContractNetworks(new PolywrapClient(getClientConfig()));
+      await setupContractNetworks();
 
     const clientPoller = new PolywrapClient(
       getClientConfig({ signer: poller }),
@@ -48,6 +50,17 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       },
     });
 
+    // tx = await arcoiris.createGathering(
+    //   token.target,
+    //   proportional.target,
+    //   quizMC.target,
+    //   false,
+    // );
+
+    // const receiptGathering = await tx.wait();
+
+    // const gatheringID = receiptGathering.logs[0].topics[1];
+
     const {
       value: { quizID, ceremonyID },
     } = await clientPoller.invoke<App.Arcoiris_Quiz>({
@@ -56,29 +69,33 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       args: { quizMC: quizMC.target, gatheringID },
     });
 
-    const txMintAlice = await token.mint(alice.address);
+    // tx = await quizMC.createQuiz(gatheringID);
 
-    const receiptMintAlice = await txMintAlice.wait();
+    // const receiptQuiz = await tx.wait();
+
+    // const quizID = receiptQuiz.logs[0].topics[1];
+
+    // const ceremonyID = await quizMC.getCeremonyID(quizID);
+
+    tx = await token.mint(alice.address);
+
+    const receiptMintAlice = await tx.wait();
 
     const tokenAlice = receiptMintAlice.logs[0].topics[3];
 
-    const txMintBob = await token.mint(bob.address);
+    tx = await token.mint(bob.address);
 
-    const receiptMintBob = await txMintBob.wait();
+    const receiptMintBob = await tx.wait();
 
     const tokenBob = receiptMintBob.logs[0].topics[3];
 
-    const txApproveAlice = await token
-      .connect(alice)
-      .approve(arcoiris.target, tokenAlice);
+    tx = await token.connect(alice).approve(arcoiris.target, tokenAlice);
 
-    await txApproveAlice.wait();
+    await tx.wait();
 
-    const txApproveBob = await token
-      .connect(bob)
-      .approve(arcoiris.target, tokenBob);
+    tx = await token.connect(bob).approve(arcoiris.target, tokenBob);
 
-    await txApproveBob.wait();
+    await tx.wait();
 
     const clientAlice = new PolywrapClient(getClientConfig({ signer: alice }));
 
@@ -94,6 +111,12 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       },
     });
 
+    // tx = await arcoiris
+    //   .connect(alice)
+    //   .contribute(gatheringID, ceremonyID, token.target, tokenAlice);
+
+    // await tx.wait();
+
     const clientBob = new PolywrapClient(getClientConfig({ signer: bob }));
 
     await clientBob.invoke<App.Ethers_TxReceipt>({
@@ -108,24 +131,43 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       },
     });
 
-    function hashValue(value: string, salt: string) {
-      const bytes = ethers.toUtf8Bytes(value);
+    // tx = await arcoiris
+    //   .connect(bob)
+    //   .contribute(gatheringID, ceremonyID, token.target, tokenBob);
 
-      const guess = ethers.concat([bytes, salt]);
+    // await tx.wait();
 
-      const hash = ethers.keccak256(guess);
+    const guessesCorrect = ["answer1", "answer2"];
 
-      return hash;
+    const saltCorrect = "randomnumber";
+
+    const saltAlice = "alicenumber";
+
+    function hashValue(saltID: string) {
+      return (value: string) => {
+        const salted = ethers.concat([ethers.toUtf8Bytes(value), saltID]);
+
+        const hash = ethers.keccak256(salted);
+
+        return hash;
+      };
     }
 
-    const saltCorrect = ethers.id("randomnumber");
+    const saltCorrectID = ethers.id(saltCorrect);
 
-    const saltHashCorrect = ethers.keccak256(saltCorrect);
+    const saltHashCorrect = ethers.keccak256(saltCorrectID);
 
-    const hashesCorrect = [
-      hashValue("banana", saltCorrect),
-      hashValue("knife", saltCorrect),
-    ];
+    const hashesCorrect = guessesCorrect.map(hashValue(saltCorrectID));
+
+    const saltAliceID = ethers.id(saltAlice);
+
+    const saltHashAlice = ethers.keccak256(saltAliceID);
+
+    const hashesAlice = guessesCorrect.map(hashValue(saltAliceID));
+
+    const guessesBytes = guessesCorrect.map((value: string) =>
+      ethers.toUtf8Bytes(value),
+    );
 
     await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
@@ -133,19 +175,24 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       args: {
         quizMC: quizMC.target,
         quizID,
-        saltHash: saltHashCorrect,
-        hashes: hashesCorrect,
+        salt: saltCorrect,
+        guesses: guessesCorrect,
       },
     });
 
-    const saltAlice = ethers.id("alicenumber");
+    // tx = await quizMC
+    //   .connect(poller)
+    //   .commitCorrect(quizID, saltHashCorrect, hashesCorrect);
 
-    const saltHashAlice = ethers.keccak256(saltAlice);
+    // await tx.wait();
 
-    const hashesAlice = [
-      hashValue("banana", saltAlice),
-      hashValue("knife", saltAlice),
-    ];
+    expect(await quizMC.getSaltHash(quizID, quizMC.target)).toEqual(
+      saltHashCorrect,
+    );
+
+    expect(await quizMC.getHashes(quizID, quizMC.target)).toEqual(
+      hashesCorrect,
+    );
 
     await clientAlice.invoke<App.Ethers_TxReceipt>({
       uri,
@@ -153,15 +200,16 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       args: {
         quizMC: quizMC.target,
         quizID,
-        saltHash: saltHashAlice,
-        hashes: hashesAlice,
+        salt: saltAlice,
+        guesses: guessesCorrect,
       },
     });
 
-    const guessesCorrect = [
-      ethers.toUtf8Bytes("banana"),
-      ethers.toUtf8Bytes("knife"),
-    ];
+    // tx = await quizMC
+    //   .connect(alice)
+    //   .commitGuess(quizID, saltHashAlice, hashesAlice);
+
+    // await tx.wait();
 
     await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
@@ -172,16 +220,26 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       },
     });
 
+    // tx = await quizMC.connect(poller).endQuiz(quizID);
+
+    // await tx.wait();
+
     await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
       method: "revealCorrect",
       args: {
         quizMC: quizMC.target,
         quizID,
-        saltCorrect,
-        guessesCorrect,
+        salt: saltCorrect,
+        guesses: guessesCorrect,
       },
     });
+
+    // tx = await quizMC
+    //   .connect(poller)
+    //   .revealCorrect(quizID, saltCorrectID, guessesBytes);
+
+    // await tx.wait();
 
     await clientAlice.invoke<App.Ethers_TxReceipt>({
       uri,
@@ -189,10 +247,16 @@ describe("Arcoíris Wrapper End to End Tests", () => {
       args: {
         quizMC: quizMC.target,
         quizID,
-        saltAlice,
-        guessesCorrect,
+        salt: saltAlice,
+        guesses: guessesCorrect,
       },
     });
+
+    // tx = await quizMC
+    //   .connect(alice)
+    //   .revealGuess(quizID, saltAliceID, guessesBytes);
+
+    // await tx.wait();
 
     await clientPoller.invoke<App.Ethers_TxReceipt>({
       uri,
@@ -202,6 +266,10 @@ describe("Arcoíris Wrapper End to End Tests", () => {
         quizID,
       },
     });
+
+    // tx = await quizMC.redistribute(quizID);
+
+    // await tx.wait();
 
     const balanceAlice = await token.balanceOf(alice.address);
 

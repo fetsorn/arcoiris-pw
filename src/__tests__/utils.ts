@@ -78,9 +78,7 @@ export function getClientConfig(
   return config.build();
 }
 
-export const setupContractNetworks = async (
-  client: PolywrapClient,
-): Promise<{
+export const setupContractNetworks = async (): Promise<{
   poller: Wallet;
   alice: Wallet;
   bob: Wallet;
