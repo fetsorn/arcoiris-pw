@@ -48,7 +48,7 @@ type Module {
         salt: String!
         """Quiz guesses"""
         guesses: [String!]!
-    ): Ethers_TxReceipt!
+    ): Commitment!
 
     """Commit hashes of guesses and hashing salt"""
     commitGuess(
@@ -60,7 +60,7 @@ type Module {
         salt: String!
         """Quiz guesses"""
         guesses: [String!]!
-    ): Ethers_TxReceipt!
+    ): Commitment!
 
     """Finish accepting guesses for a quiz"""
     endQuiz(
@@ -101,6 +101,78 @@ type Module {
         """Identification number of the quiz"""
         quizID: BigInt!
     ): Ethers_TxReceipt!
+
+    """Get committed salt hash"""
+    getSaltHash(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Account address"""
+        address: String!
+    ): String!
+
+    """Get committed hashes of quiz guesses"""
+    getHashes(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Account address"""
+        address: String!
+    ): [String!]!
+
+    """Get revealed salt"""
+    getSalt(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Account address"""
+        address: String!
+    ): String!
+
+    """Get revealed quiz guesses"""
+    getHashes(
+        """Address of the quiz master of ceremonies contract"""
+        quizMC: String!
+        """Identification number of the quiz"""
+        quizID: BigInt!
+        """Account address"""
+        address: String!
+    ): [String!]!
+
+    """Hash a UTF-8 string with keccak256"""
+    id(
+        """UTF-8 string"""
+        value: String!
+    ): String!
+
+    """Append salt to a string and hash with keccak256"""
+    saltAndHashGuess(
+        """UTF-8 string"""
+        value: String!
+        """UTF-8 string, should be globally unique"""
+        salt: String!
+    ): String!
+
+    """Get account balance of a ERC721 token"""
+    balanceOf(
+        """Address of ERC721 token"""
+        token: String!
+        """Account address"""
+        address: String!
+    ): BigInt!
+
+    """Get tokenID of a ERC721 token by index"""
+    tokenOfOwnerByIndex(
+        """Address of ERC721 token"""
+        token: String!
+        """Account address"""
+        address: String!
+        """Index of account's tokens"""
+        index: BigInt!
+    ): BigInt!
 }
 
 """Identification numbers of a quiz and related Arcoíris ceremony"""
@@ -109,4 +181,12 @@ type Quiz {
     ceremonyID: BigInt!
     """Identification number of the quiz"""
     quizID: BigInt!
+}
+
+"""Identification numbers of a quiz and related Arcoíris ceremony"""
+type Commitment {
+    """Hash of salt used for hashing quiz guesses"""
+    saltHash: BigInt!
+    """Hashes of quiz answers"""
+    guessHashes: BigInt!
 }
