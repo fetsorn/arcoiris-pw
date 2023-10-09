@@ -1,5 +1,5 @@
-#import { Module, TxResponse, TxReceipt } into Ethers from "wrap://fs/./wrap_modules/ethers"
-#import { Module } into EthersUtils from "wrap://fs/./wrap_modules/ethers_utils"
+#import { Module, TxResponse, TxReceipt } into Ethers from "wrap://ens/ethers.wraps.eth:0.1.0"
+#import { Module } into EthersUtils from "wrapscan.io/polywrap/ethers-utils@1.0"
 
 type Module {
     """Create a gathering struct with common settings for redistribution ceremonies"""
@@ -120,7 +120,7 @@ type Module {
         quizID: BigInt!
         """Account address"""
         address: String!
-    ): [String!]!
+    ): String!
 
     """Get revealed salt"""
     getSalt(
@@ -133,14 +133,14 @@ type Module {
     ): String!
 
     """Get revealed quiz guesses"""
-    getHashes(
+    getGuesses(
         """Address of the quiz master of ceremonies contract"""
         quizMC: String!
         """Identification number of the quiz"""
         quizID: BigInt!
         """Account address"""
         address: String!
-    ): [String!]!
+    ): String!
 
     """Hash a UTF-8 string with keccak256"""
     id(
@@ -149,7 +149,7 @@ type Module {
     ): String!
 
     """Append salt to a string and hash with keccak256"""
-    saltAndHashGuess(
+    saltAndHashValue(
         """UTF-8 string"""
         value: String!
         """UTF-8 string, should be globally unique"""
@@ -186,7 +186,7 @@ type Quiz {
 """Identification numbers of a quiz and related Arcoíris ceremony"""
 type Commitment {
     """Hash of salt used for hashing quiz guesses"""
-    saltHash: BigInt!
+    saltHash: String!
     """Hashes of quiz answers"""
-    guessHashes: BigInt!
+    guessHashes: [String!]!
 }

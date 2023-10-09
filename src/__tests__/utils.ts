@@ -72,6 +72,12 @@ export function getClientConfig(
           defaultNetwork: "testnet",
         }),
       }) as IWrapPackage,
+    ).setRedirect(
+      "wrap://ens/ethers.wraps.eth:0.1.0",
+      "fs/./wrap_modules/ethers"
+    ).setRedirect(
+      "wrapscan.io/polywrap/ethers-utils@1.0",
+      "fs/./wrap_modules/ethers_utils"
     );
   }
 

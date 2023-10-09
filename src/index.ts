@@ -8,8 +8,17 @@ import {
   Args_revealCorrect,
   Args_revealGuess,
   Args_redistribute,
+  Args_getSalt,
+  Args_getSaltHash,
+  Args_getHashes,
+  Args_getGuesses,
+  Args_id,
+  Args_saltAndHashValue,
+  Args_balanceOf,
+  Args_tokenOfOwnerByIndex,
   Quiz,
   ModuleBase,
+  Commitment,
   Ethers_TxReceipt,
   Ethers_Log,
   Ethers_Module,
@@ -126,7 +135,7 @@ export class Module extends ModuleBase {
     }).unwrap();
   }
 
-  commitCorrect(args: Args_commitCorrect): Ethers_TxReceipt {
+  commitCorrect(args: Args_commitCorrect): Commitment {
     const saltID = EthersUtils_Module.keccak256({
       value: "0x" + encode(args.salt),
     }).unwrap();
@@ -137,15 +146,20 @@ export class Module extends ModuleBase {
 
     const hashes = hashValues(args.guesses, saltID);
 
-    return Ethers_Module.callContractMethodAndWait({
+    Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
         "function commitCorrect(uint256 quizID, bytes32 saltHash, bytes32[] memory hashes) external onlyModerator(quizID)",
       args: [args.quizID.toString(), saltHash, "[" + hashes.toString() + "]"],
     }).unwrap();
+
+    return {
+      saltHash,
+      guessHashes: hashes,
+    };
   }
 
-  commitGuess(args: Args_commitGuess): Ethers_TxReceipt {
+  commitGuess(args: Args_commitGuess): Commitment {
     const saltID = EthersUtils_Module.keccak256({
       value: "0x" + encode(args.salt),
     }).unwrap();
@@ -156,12 +170,17 @@ export class Module extends ModuleBase {
 
     const hashes = hashValues(args.guesses, saltID);
 
-    return Ethers_Module.callContractMethodAndWait({
+    Ethers_Module.callContractMethodAndWait({
       address: args.quizMC,
       method:
         "function commitGuess(uint256 quizID, bytes32 saltHash, bytes32[] memory hashes) external",
       args: [args.quizID.toString(), saltHash, "[" + hashes.toString() + "]"],
     }).unwrap();
+
+    return {
+      saltHash,
+      guessHashes: hashes,
+    };
   }
 
   endQuiz(args: Args_endQuiz): Ethers_TxReceipt {
@@ -213,5 +232,100 @@ export class Module extends ModuleBase {
         "function redistribute(uint256 quizID) external onlyModerator(quizID)",
       args: [args.quizID.toString()],
     }).unwrap();
+  }
+
+  getSaltHash(args: Args_getSaltHash): string {
+    return Ethers_Module.callContractView({
+      address: args.quizMC,
+      method:
+        "function getSaltHash(uint256 quizID, address player) external view returns (bytes32 saltHash)",
+      args: [
+        args.quizID.toString(),
+        args.address,
+      ],
+    }).unwrap();
+  }
+
+  getSalt(args: Args_getSalt): string {
+    return Ethers_Module.callContractView({
+      address: args.quizMC,
+      method:
+        "function getSalt(uint256 quizID, address player) external view returns (bytes32 salt)",
+      args: [
+        args.quizID.toString(),
+        args.address,
+      ],
+    }).unwrap();
+  }
+
+  getHashes(args: Args_getHashes): string {
+    return Ethers_Module.callContractView({
+      address: args.quizMC,
+      method:
+        "function getHashes(uint256 quizID, address player) external view returns (bytes32[] memory hashes)",
+      args: [
+        args.quizID.toString(),
+        args.address,
+      ],
+    }).unwrap();
+  }
+
+  getGuesses(args: Args_getGuesses): string {
+    return Ethers_Module.callContractView({
+      address: args.quizMC,
+      method:
+        "function getGuesses(uint256 quizID, address player) external view returns (bytes[] memory guesses)",
+      args: [
+        args.quizID.toString(),
+        args.address,
+      ],
+    }).unwrap();
+  }
+
+  id(args: Args_id): string {
+    return EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.value),
+    }).unwrap();
+  }
+
+  saltAndHashValue(args: Args_saltAndHashValue): string {
+    const saltID = EthersUtils_Module.keccak256({
+      value: "0x" + encode(args.salt),
+    }).unwrap();
+
+    const salted = "0x" + encode(args.value) + saltID.substring(2);
+
+    const hash = EthersUtils_Module.keccak256({
+      value: salted,
+    }).unwrap();
+
+    return hash;
+  }
+
+  balanceOf(args: Args_balanceOf): BigInt {
+    const balance = Ethers_Module.callContractView({
+      address: args.token,
+      method:
+        "function balanceOf(address owner) external view returns (uint256 balance)",
+      args: [
+        args.address,
+      ],
+    }).unwrap();
+
+    return BigInt.from(balance);
+  }
+
+  tokenOfOwnerByIndex(args: Args_tokenOfOwnerByIndex): BigInt {
+    const tokenID = Ethers_Module.callContractView({
+      address: args.token,
+      method:
+        "function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256)",
+      args: [
+        args.address,
+        args.index.toString()
+      ],
+    }).unwrap();
+
+    return BigInt.from(tokenID);
   }
 }
